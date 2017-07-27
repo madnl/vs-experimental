@@ -6,12 +6,13 @@ import Box from './Box';
 import range from '../util/range';
 
 const ITEM_COUNT = 5;
-const COMPLEXITY = 10;
+const COMPLEXITY = 100;
+const HEIGHT = '200px';
 
 const items = range(ITEM_COUNT, index => ({
   key: index,
   render() {
-    return <Box index={index} complexity={COMPLEXITY} />;
+    return <Box text={index.toString()} complexity={COMPLEXITY} height={HEIGHT} />;
   }
 }));
 
