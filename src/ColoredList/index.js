@@ -4,15 +4,16 @@ import React from 'react';
 import VirtualizedScroller from '../VirtualizedScroller';
 import Box from './Box';
 import range from '../util/range';
+import windowViewport from '../viewport/window';
 
-const ITEM_COUNT = 5;
+const ITEM_COUNT = 20;
 const COMPLEXITY = 100;
-const HEIGHT = '200px';
+const HEIGHT = '250px';
 
 const items = range(ITEM_COUNT, index => ({
-  key: index,
+  key: index.toString(),
   render() {
-    return <Box text={index.toString()} complexity={COMPLEXITY} height={HEIGHT} />;
+    return <Box index={index} complexity={COMPLEXITY} height={HEIGHT} />;
   }
 }));
 
@@ -20,7 +21,7 @@ export default class ColoredList extends React.Component {
   render() {
     return (
       <div>
-        <VirtualizedScroller items={items} />
+        <VirtualizedScroller viewport={windowViewport()} items={items} />
       </div>
     );
   }

@@ -2,30 +2,232 @@
 
 import React from 'react';
 import Cell from './Cell';
-import { Item } from './interfaces';
+import { Item, Viewport } from './interfaces';
+import Layout from './Layout';
+import Rectangle from './Rectangle';
+import relaxLayout from './relaxLayout';
+import findAnchorIndex from './findAnchorIndex';
+
+const ASSUMED_ITEM_HEIGHT = 200;
 
 type Props = {
   items: Item[],
-  shouldUpdate: (prev: Item, next: Item) => boolean
+  shouldUpdate: (prev: Item, next: Item) => boolean,
+  viewport: Viewport
 };
+
+type RenderableItem = {
+  item: Item,
+  offset: number
+};
+
+type State = {
+  renderableItems: RenderableItem[]
+};
+
+type UpdateOptions = {
+  updateHeights?: boolean,
+  updateVisibility?: boolean
+};
+
+const runwayStyle = (height: number) => ({
+  position: 'relative',
+  height: `${height}px`
+});
+
+const cellStyle = (offset: number) => ({
+  position: 'absolute',
+  transform: `translateY(${offset}px)`
+});
 
 export default class VirtualizedScroller extends React.Component {
   props: Props;
+  state: State;
+  _visibility: Set<string>;
+  _layout: Layout;
+  _runway: ?Element;
+  _cells: Map<string, Element>;
+  _unlistenToViewport: ?() => void;
 
   static defaultProps = {
-    shouldUpdate: (prev: Item, next: Item) => prev === next
+    shouldUpdate: (prev: Item, next: Item) => prev !== next
   };
 
+  constructor(props: Props, context: Object) {
+    super(props, context);
+    this._visibility = new Set();
+    this._layout = new Layout(ASSUMED_ITEM_HEIGHT);
+    this._cells = new Map();
+    this.state = {
+      renderableItems: []
+    };
+  }
+
+  shouldComponentUpdate(nextProps: Props, nextState: State) {
+    const { renderableItems } = this.state;
+    const { renderableItems: nextRenderableItems } = nextState;
+    const { shouldUpdate } = nextProps;
+    if (renderableItems.length !== nextRenderableItems.length) {
+      return true;
+    }
+    for (let i = 0; i < renderableItems.length; i++) {
+      const prev = renderableItems[i];
+      const next = nextRenderableItems[i];
+      const itemChanged =
+        prev.item.key !== next.item.key ||
+        shouldUpdate(prev.item, next.item) ||
+        prev.offset !== next.offset;
+      if (itemChanged) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // componentWillUpdate(nextProps: Props, nextState: State) {
+  //   console.log('componentWillUpdate/prev', this.state.renderableItems);
+  //   console.log('componentWillUpdate/next', nextState.renderableItems);
+  // }
+
+  componentDidMount() {
+    this._unlistenToViewport = this.props.viewport.listen(() => {
+      this._scheduleUpdate({ updateVisibility: true });
+    });
+    this._scheduleUpdate({ updateHeights: true, updateVisibility: true });
+  }
+
+  componentDidUpdate() {
+    this._scheduleUpdate({ updateHeights: true, updateVisibility: true });
+  }
+
+  componentWillUnmount() {
+    if (this._unlistenToViewport) {
+      this._unlistenToViewport();
+    }
+  }
+
   render() {
-    const { items, shouldUpdate } = this.props;
+    const { shouldUpdate } = this.props;
+    const { renderableItems } = this.state;
+    console.log('rendering', renderableItems.map(x => x.item.key));
     return (
-      <div>
-        {items.map((item, key) => (
-          <div key={key}>
+      <div ref={this._setRunway} style={runwayStyle(this._runwayHeight())}>
+        {renderableItems.map(({ item, offset }) => (
+          <div
+            ref={(elem: Element) => this._setCell(item.key, elem)}
+            style={cellStyle(offset)}
+            key={item.key}
+          >
             <Cell item={item} shouldUpdate={shouldUpdate} />
           </div>
         ))}
       </div>
     );
   }
+
+  _update = ({ updateHeights, updateVisibility }: UpdateOptions) => {
+    const view = this._getRelativeView();
+    if (!view) {
+      return;
+    }
+    if (updateHeights) {
+      this._recordHeights();
+      this._updateLayout(view);
+    }
+    if (updateVisibility) {
+      this._updateVisibility(view);
+    }
+    if (updateHeights || updateVisibility) {
+      this._updateRenderableItems();
+    }
+  };
+
+  _scheduleUpdate = createScheduler(window.requestAnimationFrame, this._update);
+
+  _updateRenderableItems() {
+    const { items } = this.props;
+    const nextRenderableItems = items
+      .filter(item => this._visibility.has(item.key))
+      .map(item => ({ item, offset: this._layout.rectangleFor(item.key).top }));
+    this.setState({
+      renderableItems: nextRenderableItems
+    });
+  }
+
+  _recordHeights() {
+    this._cells.forEach((elem, key) => {
+      this._layout.updateHeight(key, elem.getBoundingClientRect().height);
+    });
+  }
+
+  _updateVisibility(view: Rectangle) {
+    this._visibility.clear();
+    this.props.items.forEach(item => {
+      if (this._layout.rectangleFor(item.key).doesIntersectWith(view)) {
+        this._visibility.add(item.key);
+      }
+    });
+  }
+
+  _updateLayout(view: Rectangle) {
+    const { items } = this.props;
+    const anchorIndex = findAnchorIndex({
+      items,
+      visibleSet: this._visibility,
+      view,
+      layout: this._layout
+    });
+    if (anchorIndex >= 0) {
+      relaxLayout({
+        layout: this._layout,
+        anchorIndex,
+        items
+      });
+    }
+  }
+
+  _getRelativeView() {
+    const runwayRect = this._runway && this._runway.getBoundingClientRect();
+    return runwayRect && this.props.viewport.getRectangle().translateBy(-runwayRect.top);
+  }
+
+  _runwayHeight() {
+    const { items } = this.props;
+    const lastItem = items.length > 0 ? items[items.length - 1] : undefined;
+    return lastItem ? this._layout.rectangleFor(lastItem.key).bottom : 0;
+  }
+
+  _setRunway = (elem: Element) => {
+    this._runway = elem;
+  };
+
+  _setCell(key: string, elem: Element) {
+    if (elem) {
+      this._cells.set(key, elem);
+    } else {
+      this._cells.delete(key);
+    }
+  }
 }
+
+type Callback = () => void;
+type Requester = (callback: Callback) => number;
+
+const createScheduler = (requester: Requester, callback: UpdateOptions => void) => {
+  let callId = 0;
+  let nextOptions: UpdateOptions = {};
+
+  const onCallRequested = () => {
+    const options = nextOptions;
+    nextOptions = {};
+    callId = 0;
+    callback(options);
+  };
+
+  return (options: UpdateOptions) => {
+    nextOptions = { ...options, ...nextOptions };
+    if (!callId) {
+      callId = requester(onCallRequested);
+    }
+  };
+};

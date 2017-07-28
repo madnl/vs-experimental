@@ -5,15 +5,16 @@ import range from '../util/range';
 
 type Props = {
   height: string,
-  text: string,
+  index: number,
   complexity: number
 };
 
-const boxStyle = height => ({
+const boxStyle = (height, borderColor) => ({
   display: 'flex',
   height,
   borderStyle: 'solid',
-  borderWidth: '1px'
+  borderWidth: '1px',
+  borderColor
 });
 
 const tileComplex = {
@@ -37,23 +38,25 @@ const textStyle = {
   fontFamily: 'sans-serif'
 };
 
-export default ({ text, complexity, height }: Props) => (
-  <div style={boxStyle(height)}>
+export default ({ index, complexity, height }: Props) => (
+  <div style={boxStyle(height, borderPalette(index))}>
     <div style={textStyle}>
-      {text}
+      {index}
     </div>
     <div style={tileComplex}>
-      {range(complexity, index => <div key={index} style={tileStyle(pickColor(index))} />)}
+      {range(complexity, index => <div key={index} style={tileStyle(tilePalette(index))} />)}
     </div>
   </div>
 );
 
-const colorList = [
+const palette = colorList => index => colorList[index % colorList.length];
+
+const tilePalette = palette([
   'rgba(121, 173, 220, 1)',
   'rgba(255, 192, 159, 1)',
   'rgba(255, 238, 147, 1)',
   'rgba(252, 245, 199, 1)',
   'rgba(173, 247, 182, 1)'
-];
+]);
 
-const pickColor = index => colorList[index % colorList.length];
+const borderPalette = palette(['black', 'red']);
