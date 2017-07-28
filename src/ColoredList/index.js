@@ -7,7 +7,7 @@ import range from '../util/range';
 import windowViewport from '../viewport/window';
 
 const ITEM_COUNT = 20;
-const COMPLEXITY = 100;
+const COMPLEXITY = 1000;
 const HEIGHT = '250px';
 
 const items = range(ITEM_COUNT, index => ({
