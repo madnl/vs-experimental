@@ -63,6 +63,14 @@ export default class VirtualizedScroller extends React.Component {
     };
   }
 
+  componentWillReceiveProps(nextProps: Props) {
+    if (this.props.items !== nextProps.items) {
+      this._visibility = transferVisibility(this._visibility, nextProps.items);
+      this._scheduleUpdate({ updateVisibility: true });
+      // TODO: schedule state (layout) cleanup on idle
+    }
+  }
+
   shouldComponentUpdate(nextProps: Props, nextState: State) {
     const { renderableItems } = this.state;
     const { renderableItems: nextRenderableItems } = nextState;
@@ -209,6 +217,16 @@ export default class VirtualizedScroller extends React.Component {
     }
   }
 }
+
+const transferVisibility = (visibleSet: Set<string>, items: Item[]): Set<string> => {
+  const newVisibleSet = new Set();
+  items.forEach(item => {
+    if (visibleSet.has(item.key)) {
+      newVisibleSet.add(item.key);
+    }
+  });
+  return newVisibleSet;
+};
 
 type Callback = () => void;
 type Requester = (callback: Callback) => number;

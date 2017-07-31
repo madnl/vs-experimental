@@ -29,17 +29,19 @@ export default class ColoredList extends React.Component {
   }
 
   componentWillMount() {
+    const updateItems = (fn: (Item[]) => Item[]) => {
+      this.setState(({ items }: { items: Item[] }) => ({ items: fn(items) }));
+    };
     const inserter = (fn: (Item[]) => number) => {
-      this.setState(({ items }: { items: Item[] }) => {
+      updateItems(items => {
         const newIndex = items.length;
         const index = fn(items);
         if (index < 0) {
           console.error('Index not found');
         }
-        const newItems = index >= 0
+        return index >= 0
           ? [...items.slice(0, index), createItem(newIndex), ...items.slice(index)]
           : items;
-        return { items: newItems };
       });
     };
     const adjustedIndex = (key: number, delta = 0) => items => {
@@ -59,6 +61,12 @@ export default class ColoredList extends React.Component {
       },
       insertAtBottom() {
         inserter(items => items.length);
+      },
+      reset() {
+        updateItems(() => initialItems);
+      },
+      clear() {
+        updateItems(() => []);
       }
     };
   }
