@@ -18,7 +18,9 @@ const createItem = index => ({
   }
 });
 
-const initialItems = range(ITEM_COUNT, createItem);
+const mkItems = (fromIndex: number, count: number) => range(count, i => createItem(fromIndex + i));
+
+const initialItems = mkItems(0, ITEM_COUNT);
 
 export default class ColoredList extends React.Component {
   state: { items: Item[] };
@@ -32,15 +34,14 @@ export default class ColoredList extends React.Component {
     const updateItems = (fn: (Item[]) => Item[]) => {
       this.setState(({ items }: { items: Item[] }) => ({ items: fn(items) }));
     };
-    const inserter = (fn: (Item[]) => number) => {
+    const inserter = (fn: (Item[]) => number, count: number) => {
       updateItems(items => {
-        const newIndex = items.length;
         const index = fn(items);
         if (index < 0) {
           console.error('Index not found');
         }
         return index >= 0
-          ? [...items.slice(0, index), createItem(newIndex), ...items.slice(index)]
+          ? [...items.slice(0, index), ...mkItems(items.length, count), ...items.slice(index)]
           : items;
       });
     };
@@ -50,17 +51,17 @@ export default class ColoredList extends React.Component {
     };
 
     window.list = {
-      insertAfter(key: number) {
-        inserter(adjustedIndex(key, +1));
+      insertAfter(key: number, count = 1) {
+        inserter(adjustedIndex(key, +1), count);
       },
-      insertBefore(key: number) {
-        inserter(adjustedIndex(key));
+      insertBefore(key: number, count = 1) {
+        inserter(adjustedIndex(key), count);
       },
-      insertAtTop() {
-        inserter(() => 0);
+      insertAtTop(count = 1) {
+        inserter(() => 0, count);
       },
-      insertAtBottom() {
-        inserter(items => items.length);
+      insertAtBottom(count = 1) {
+        inserter(items => items.length, count);
       },
       reset() {
         updateItems(() => initialItems);
