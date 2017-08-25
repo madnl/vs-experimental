@@ -98,9 +98,7 @@ export default class VirtualizedScroller extends React.Component {
   // }
 
   componentDidMount() {
-    this._unlistenToViewport = this.props.viewport.listen(() => {
-      this._scheduleUpdate({ updateVisibility: true });
-    });
+    this._unlistenToViewport = this.props.viewport.listen(this._handleScroll);
     this._scheduleUpdate({ updateHeights: true, updateVisibility: true });
   }
 
@@ -151,6 +149,10 @@ export default class VirtualizedScroller extends React.Component {
   };
 
   _scheduleUpdate = createScheduler(window.requestAnimationFrame, this._update);
+
+  _handleScroll = () => {
+    this._scheduleUpdate({ updateVisibility: true });
+  };
 
   _updateRenderableItems() {
     const { items } = this.props;
