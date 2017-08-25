@@ -4,7 +4,8 @@
   - plain data array
   - keyFunction
   - renderFunction
-  - typeFunction
+  - typeFunction (to aid recycling)
+  - heightEstimator
 
 + customize anchoring, allow dynamic changing of anchoring from props
 
@@ -16,14 +17,17 @@
 
 # Correctness/Bugs
 
-+ ensure first item always positioned at offset 0
++ [HIGH] ensure first item always positioned at offset 0
 + support list changes below viewport top
 + support list changes above viewport top
 + ensure scroll to top works correctly
++ prevent infinite loops due to constant height updates
 
 # Performance improvements
 
 + Visibility update should split out rendering of new items
++ Defer cleanup to idle moments
+  - removing unreferenced data from entries that have dissapeared
 
 # Nice to have features
 
