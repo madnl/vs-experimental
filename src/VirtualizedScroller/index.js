@@ -64,7 +64,6 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
 
   componentWillReceiveProps(nextProps: Props) {
     if (this.props.items !== nextProps.items) {
-      this._visibility = transferVisibility(this._visibility, nextProps.items);
       this._scheduleUpdate({ updateVisibility: true, updateLayout: true });
       // TODO: schedule state (layout) cleanup on idle
       displayState('componentWillReceiveProps', this, nextProps.items);
@@ -219,16 +218,6 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     }
   }
 }
-
-const transferVisibility = (visibleSet: Set<string>, items: Item[]): Set<string> => {
-  const newVisibleSet = new Set();
-  items.forEach(item => {
-    if (visibleSet.has(item.key)) {
-      newVisibleSet.add(item.key);
-    }
-  });
-  return newVisibleSet;
-};
 
 type Callback = () => void;
 type Requester = (callback: Callback) => number;
