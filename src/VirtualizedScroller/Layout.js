@@ -1,6 +1,7 @@
 // @flow
 
 import Rectangle from './Rectangle';
+import updateValues from '../util/updateValues';
 
 export default class Layout {
   _rectangles: Map<string, Rectangle>;
@@ -24,5 +25,9 @@ export default class Layout {
 
   updateRectangle(key: string, rectangle: Rectangle) {
     this._rectangles.set(key, rectangle);
+  }
+
+  translateAll(offset: number) {
+    updateValues(this._rectangles, (r) => r.translateBy(offset));
   }
 }

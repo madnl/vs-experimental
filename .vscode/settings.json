@@ -10,5 +10,7 @@
     "node_modules": true
   },
   "javascript.format.enable": false,
-  "eslint.enable": false
+  "eslint.enable": false,
+  "prettier.printWidth": 100,
+  "editor.formatOnPaste": true
 }

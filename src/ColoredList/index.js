@@ -7,7 +7,7 @@ import range from '../util/range';
 import windowViewport from '../viewport/window';
 import type { Item } from '../VirtualizedScroller/interfaces';
 
-const ITEM_COUNT = 2;
+const ITEM_COUNT = 10;
 const COMPLEXITY = 40;
 const HEIGHT = '248px';
 

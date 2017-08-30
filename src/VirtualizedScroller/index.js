@@ -143,8 +143,11 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     if (shouldUpdateLayout || updateVisibility) {
       this._updateRenderableItems();
     }
-    console.log('View', stringifyRect(view));
-    displayState(`_update(${updateHeights ? 'H' : ''}${shouldUpdateLayout ? 'L' : ''}${updateVisibility ? 'V' : ''})`, this);
+    // console.log('View', stringifyRect(view));
+    // displayState(
+    //   `_update(${updateHeights ? 'H' : ''}${shouldUpdateLayout ? 'L' : ''}${updateVisibility ? 'V' : ''})`,
+    //   this
+    // );
   };
 
   _scheduleUpdate = createScheduler(window.requestAnimationFrame, this._update);
@@ -154,13 +157,23 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   };
 
   _updateRenderableItems() {
-    const { items } = this.props;
-    const nextRenderableItems = items
-      .filter(item => this._visibility.has(item.key))
-      .map(item => ({ item, offset: this._layout.rectangleFor(item.key).top }));
+    const { items, viewport } = this.props;
+    let nextRenderableItems = buildRenderableItems(items, this._layout, this._visibility);
+    const forceLayoutNormalization = shouldForceNormalization(items, nextRenderableItems);
+    let scrollOffset = 0;
+    if (forceLayoutNormalization) {
+      scrollOffset = this._normalizeLayout();
+      console.log('Forced normalization', scrollOffset);
+      // Rebuild the renderable items given the new, normalized, layout
+      nextRenderableItems = buildRenderableItems(items, this._layout, this._visibility);
+    }
     this.setState({
       renderableItems: nextRenderableItems
     });
+    
+    if (Math.abs(scrollOffset) > 3) {
+      viewport.scrollBy(-scrollOffset);
+    }
   }
 
   _recordHeights() {
@@ -195,6 +208,20 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     }
   }
 
+  _normalizeLayout() {
+    const { items } = this.props;
+    const firstItem = items[0];
+    const layout = this._layout;
+    if (firstItem) {
+      const offset = layout.rectangleFor(firstItem.key).top;
+      if (offset !== 0) {
+        layout.translateAll(-offset);
+        return offset;
+      }
+    }
+    return 0;
+  }
+
   _getRelativeView() {
     const runwayRect = this._runway && this._runway.getBoundingClientRect();
     return runwayRect && this.props.viewport.getRectangle().translateBy(-runwayRect.top);
@@ -219,6 +246,19 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 }
 
+const buildRenderableItems = (items, layout, visibleSet) =>
+  items
+    .filter(item => visibleSet.has(item.key))
+    .map(item => ({ item, offset: layout.rectangleFor(item.key).top }));
+
+const shouldForceNormalization = (items, renderableItems) => {
+  const firstItem = items[0];
+  return (
+    !!firstItem &&
+    renderableItems.some(({ item, offset }) => offset < 0 || (item.key === firstItem.key && offset > 0))
+  );
+};
+
 type Callback = () => void;
 type Requester = (callback: Callback) => number;
 
@@ -241,20 +281,23 @@ const createScheduler = (requester: Requester, callback: UpdateOptions => void) 
   };
 };
 
-
-const displayState = (label, self, itemArray: ?Item[]) => {
+const displayState = (label, self, itemArray: ?(Item[])) => {
   const items = itemArray || self.props.items;
   const visibility = self._visibility;
   const layout = self._layout;
-  console.log(label,
-    items.map(item => {
-    const r = layout.rectangleFor(item.key);
-    return {
-      key: item.key,
-      r: { top: r.top, bottom: r.bottom },
-      visible: visibility.has(item.key)
-    }
-  }).map(({ key, r, visible }) => `${key}[${visible ? '+' : '-'}] => ${stringifyRect(r)}`));
-}
+  console.log(
+    label,
+    items
+      .map(item => {
+        const r = layout.rectangleFor(item.key);
+        return {
+          key: item.key,
+          r: { top: r.top, bottom: r.bottom },
+          visible: visibility.has(item.key)
+        };
+      })
+      .map(({ key, r, visible }) => `${key}[${visible ? '+' : '-'}] => ${stringifyRect(r)}`)
+  );
+};
 
-const stringifyRect = (r) => `[${Math.round(r.top)}, ${Math.round(r.bottom)})`
+const stringifyRect = r => `[${Math.round(r.top)}, ${Math.round(r.bottom)})`;

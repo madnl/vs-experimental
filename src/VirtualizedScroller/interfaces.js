@@ -10,5 +10,6 @@ export interface Item {
 
 export interface Viewport {
   getRectangle(): Rectangle,
-  listen(listener: () => void): () => void
+  listen(listener: () => void): () => void,
+  scrollBy(offset: number): void
 }

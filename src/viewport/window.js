@@ -16,5 +16,8 @@ export default (wnd: typeof window = window): Viewport => ({
       wnd.removeEventListener('scroll', onChange);
       wnd.removeEventListener('resize', onChange);
     };
+  },
+  scrollBy(offset) {
+    wnd.scrollBy(0, offset);
   }
 });
