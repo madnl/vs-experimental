@@ -9,5 +9,6 @@
     "**/.DS_Store": true,
     "node_modules": true
   },
-  "javascript.format.enable": false
+  "javascript.format.enable": false,
+  "eslint.enable": false
 }

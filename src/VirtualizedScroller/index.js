@@ -27,6 +27,7 @@ type State = {
 
 type UpdateOptions = {
   updateHeights?: boolean,
+  updateLayout?: boolean,
   updateVisibility?: boolean
 };
 
@@ -40,9 +41,7 @@ const cellStyle = (offset: number) => ({
   transform: `translateY(${offset}px)`
 });
 
-export default class VirtualizedScroller extends React.Component {
-  props: Props;
-  state: State;
+export default class VirtualizedScroller extends React.Component<Props, State> {
   _visibility: Set<string>;
   _layout: Layout;
   _runway: ?Element;
@@ -66,8 +65,9 @@ export default class VirtualizedScroller extends React.Component {
   componentWillReceiveProps(nextProps: Props) {
     if (this.props.items !== nextProps.items) {
       this._visibility = transferVisibility(this._visibility, nextProps.items);
-      this._scheduleUpdate({ updateVisibility: true });
+      this._scheduleUpdate({ updateVisibility: true, updateLayout: true });
       // TODO: schedule state (layout) cleanup on idle
+      displayState('componentWillReceiveProps', this, nextProps.items);
     }
   }
 
@@ -92,11 +92,6 @@ export default class VirtualizedScroller extends React.Component {
     return false;
   }
 
-  // componentWillUpdate(nextProps: Props, nextState: State) {
-  //   console.log('componentWillUpdate/prev', this.state.renderableItems);
-  //   console.log('componentWillUpdate/next', nextState.renderableItems);
-  // }
-
   componentDidMount() {
     this._unlistenToViewport = this.props.viewport.listen(this._handleScroll);
     this._scheduleUpdate({ updateHeights: true, updateVisibility: true });
@@ -115,12 +110,12 @@ export default class VirtualizedScroller extends React.Component {
   render() {
     const { shouldUpdate } = this.props;
     const { renderableItems } = this.state;
-    console.log('rendering', renderableItems.map(x => x.item.key));
+    // console.log('rendering', renderableItems.map(x => x.item.key));
     return (
       <div ref={this._setRunway} style={runwayStyle(this._runwayHeight())}>
         {renderableItems.map(({ item, offset }) => (
           <div
-            ref={(elem: Element) => this._setCell(item.key, elem)}
+            ref={(elem: ?Element) => this._setCell(item.key, elem)}
             style={cellStyle(offset)}
             key={item.key}
           >
@@ -131,21 +126,26 @@ export default class VirtualizedScroller extends React.Component {
     );
   }
 
-  _update = ({ updateHeights, updateVisibility }: UpdateOptions) => {
+  _update = ({ updateHeights, updateLayout, updateVisibility }: UpdateOptions) => {
     const view = this._getRelativeView();
     if (!view) {
       return;
     }
     if (updateHeights) {
       this._recordHeights();
+    }
+    const shouldUpdateLayout = updateLayout || updateHeights;
+    if (shouldUpdateLayout) {
       this._updateLayout(view);
     }
     if (updateVisibility) {
       this._updateVisibility(view);
     }
-    if (updateHeights || updateVisibility) {
+    if (shouldUpdateLayout || updateVisibility) {
       this._updateRenderableItems();
     }
+    console.log('View', stringifyRect(view));
+    displayState(`_update(${updateHeights ? 'H' : ''}${shouldUpdateLayout ? 'L' : ''}${updateVisibility ? 'V' : ''})`, this);
   };
 
   _scheduleUpdate = createScheduler(window.requestAnimationFrame, this._update);
@@ -207,11 +207,11 @@ export default class VirtualizedScroller extends React.Component {
     return lastItem ? this._layout.rectangleFor(lastItem.key).bottom : 0;
   }
 
-  _setRunway = (elem: Element) => {
+  _setRunway = (elem: ?Element) => {
     this._runway = elem;
   };
 
-  _setCell(key: string, elem: Element) {
+  _setCell(key: string, elem: ?Element) {
     if (elem) {
       this._cells.set(key, elem);
     } else {
@@ -251,3 +251,21 @@ const createScheduler = (requester: Requester, callback: UpdateOptions => void) 
     }
   };
 };
+
+
+const displayState = (label, self, itemArray: ?Item[]) => {
+  const items = itemArray || self.props.items;
+  const visibility = self._visibility;
+  const layout = self._layout;
+  console.log(label,
+    items.map(item => {
+    const r = layout.rectangleFor(item.key);
+    return {
+      key: item.key,
+      r: { top: r.top, bottom: r.bottom },
+      visible: visibility.has(item.key)
+    }
+  }).map(({ key, r, visible }) => `${key}[${visible ? '+' : '-'}] => ${stringifyRect(r)}`));
+}
+
+const stringifyRect = (r) => `[${Math.round(r.top)}, ${Math.round(r.bottom)})`

@@ -17,7 +17,8 @@
 
 # Correctness/Bugs
 
-+ [HIGH] ensure first item always positioned at offset 0
++ [HIGH] no items are rendered at negative positions
++ [HIGH] first item is positioned at 0
 + support list changes below viewport top
 + support list changes above viewport top
 + ensure scroll to top works correctly

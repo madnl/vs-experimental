@@ -1,9 +1,11 @@
 // @flow
 
-import React, { Component } from 'react';
+import React from 'react';
 import ColoredList from './ColoredList';
 
-class App extends Component {
+type Props = {}
+
+class App extends React.Component<Props> {
   render() {
     return <ColoredList />;
   }

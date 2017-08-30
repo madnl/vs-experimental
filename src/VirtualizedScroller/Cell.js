@@ -8,8 +8,7 @@ type Props = {
   shouldUpdate: (prev: Item, next: Item) => boolean
 };
 
-export default class Cell extends React.Component {
-  props: Props;
+export default class Cell extends React.Component<Props> {
 
   shouldComponentUpdate(nextProps: Props) {
     const { item } = this.props;

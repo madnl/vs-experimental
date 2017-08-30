@@ -7,9 +7,9 @@ import range from '../util/range';
 import windowViewport from '../viewport/window';
 import type { Item } from '../VirtualizedScroller/interfaces';
 
-const ITEM_COUNT = 20;
+const ITEM_COUNT = 2;
 const COMPLEXITY = 40;
-const HEIGHT = '250px';
+const HEIGHT = '248px';
 
 const createItem = index => ({
   key: index.toString(),
@@ -22,9 +22,10 @@ const mkItems = (fromIndex: number, count: number) => range(count, i => createIt
 
 const initialItems = mkItems(0, ITEM_COUNT);
 
-export default class ColoredList extends React.Component {
-  state: { items: Item[] };
+type Props = {};
+type State = { items: Item[] };
 
+export default class ColoredList extends React.Component<Props, State> {
   constructor(props: {}, context: Object) {
     super(props, context);
     this.state = { items: initialItems };
