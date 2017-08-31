@@ -7,8 +7,15 @@ import Layout from './Layout';
 import Rectangle from './Rectangle';
 import relaxLayout from './relaxLayout';
 import findAnchorIndex from './findAnchorIndex';
+import QuiescenceScheduler from '../util/QuiescenceScheduler';
 
 const ASSUMED_ITEM_HEIGHT = 200;
+
+const QUIESCENCE_WAIT_INTERVAL_MS = 150;
+
+const NORMALIZE_OFFSET_THRESHOLD = 0.1;
+
+const VIEWPORT_SCROLL_THRESHOLD = 3;
 
 type Props = {
   items: Item[],
@@ -28,8 +35,11 @@ type State = {
 type UpdateOptions = {
   updateHeights?: boolean,
   updateLayout?: boolean,
-  updateVisibility?: boolean
+  updateVisibility?: boolean,
+  normalizeLayout?: boolean
 };
+
+type NormalizationUrgency = 'none' | 'low' | 'high';
 
 const runwayStyle = (height: number) => ({
   position: 'relative',
@@ -47,6 +57,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   _runway: ?Element;
   _cells: Map<string, Element>;
   _unlistenToViewport: ?() => void;
+  _quiescenceScheduler: QuiescenceScheduler;
 
   static defaultProps = {
     shouldUpdate: (prev: Item, next: Item) => prev !== next
@@ -60,6 +71,9 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     this.state = {
       renderableItems: []
     };
+    this._quiescenceScheduler = new QuiescenceScheduler({
+      waitIntervalMs: QUIESCENCE_WAIT_INTERVAL_MS
+    });
   }
 
   componentWillReceiveProps(nextProps: Props) {
@@ -125,7 +139,8 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     );
   }
 
-  _update = ({ updateHeights, updateLayout, updateVisibility }: UpdateOptions) => {
+  _update = ({ updateHeights, updateLayout, updateVisibility, normalizeLayout }: UpdateOptions) => {
+    this._quiescenceScheduler.signalWork();
     const view = this._getRelativeView();
     if (!view) {
       return;
@@ -140,40 +155,52 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     if (updateVisibility) {
       this._updateVisibility(view);
     }
-    if (shouldUpdateLayout || updateVisibility) {
+    const normalizationUrgency = this._normalizationUrgency();
+    const shouldNormalize =
+      normalizationUrgency === 'high' || (normalizationUrgency === 'low' && normalizeLayout);
+    let scrollOffset = 0;
+    if (shouldNormalize) {
+      scrollOffset = this._normalizeLayout();
+    } else if (normalizationUrgency === 'low') {
+      this._scheduleUpdateWhenIdle({ normalizeLayout: true });
+    }
+    if (shouldUpdateLayout || updateVisibility || shouldNormalize) {
       this._updateRenderableItems();
     }
+    scrollOffset && console.log('Forced scroll offset', scrollOffset);
+    if (Math.abs(scrollOffset) > VIEWPORT_SCROLL_THRESHOLD) {
+      this.props.viewport.scrollBy(-scrollOffset);
+    }
+
     // console.log('View', stringifyRect(view));
+
     // displayState(
+
     //   `_update(${updateHeights ? 'H' : ''}${shouldUpdateLayout ? 'L' : ''}${updateVisibility ? 'V' : ''})`,
+
     //   this
+
     // );
   };
 
   _scheduleUpdate = createScheduler(window.requestAnimationFrame, this._update);
 
+  _scheduleUpdateWhenIdle = createScheduler(
+    cb => this._quiescenceScheduler.schedule(cb),
+    this._update
+  );
+
   _handleScroll = () => {
+    this._quiescenceScheduler.signalWork();
     this._scheduleUpdate({ updateVisibility: true });
   };
 
   _updateRenderableItems() {
-    const { items, viewport } = this.props;
+    const { items } = this.props;
     let nextRenderableItems = buildRenderableItems(items, this._layout, this._visibility);
-    const forceLayoutNormalization = shouldForceNormalization(items, nextRenderableItems);
-    let scrollOffset = 0;
-    if (forceLayoutNormalization) {
-      scrollOffset = this._normalizeLayout();
-      console.log('Forced normalization', scrollOffset);
-      // Rebuild the renderable items given the new, normalized, layout
-      nextRenderableItems = buildRenderableItems(items, this._layout, this._visibility);
-    }
     this.setState({
       renderableItems: nextRenderableItems
     });
-    
-    if (Math.abs(scrollOffset) > 3) {
-      viewport.scrollBy(-scrollOffset);
-    }
   }
 
   _recordHeights() {
@@ -206,6 +233,28 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
         items
       });
     }
+  }
+
+  _normalizationUrgency(): NormalizationUrgency {
+    const { items } = this.props;
+    const firstItem = items[0];
+    if (firstItem) {
+      const badTop = Math.abs(this._layout.rectangleFor(firstItem.key).top) > NORMALIZE_OFFSET_THRESHOLD;
+      const firstItemVisible = this._visibility.has(firstItem.key);
+      if (badTop && firstItemVisible) {
+        return 'high';
+      }
+      const visibleWithNegativeOffsets = [...this._visibility].some(
+        key => this._layout.rectangleFor(key).top < -NORMALIZE_OFFSET_THRESHOLD
+      );
+      if (visibleWithNegativeOffsets) {
+        return 'high';
+      }
+      if (badTop) {
+        return 'low';
+      }
+    }
+    return 'none';
   }
 
   _normalizeLayout() {
@@ -250,14 +299,6 @@ const buildRenderableItems = (items, layout, visibleSet) =>
   items
     .filter(item => visibleSet.has(item.key))
     .map(item => ({ item, offset: layout.rectangleFor(item.key).top }));
-
-const shouldForceNormalization = (items, renderableItems) => {
-  const firstItem = items[0];
-  return (
-    !!firstItem &&
-    renderableItems.some(({ item, offset }) => offset < 0 || (item.key === firstItem.key && offset > 0))
-  );
-};
 
 type Callback = () => void;
 type Requester = (callback: Callback) => number;
