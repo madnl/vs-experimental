@@ -2520,9 +2520,9 @@ flatten@^1.0.2:
   version "1.0.2"
   resolved "https://artifactory.twitter.biz:443/api/npm/js-virtual/flatten/-/flatten-1.0.2.tgz#dae46a9d78fbe25292258cc1e780a41d95c03782"
 
-flow-bin@^0.51.0:
-  version "0.51.0"
-  resolved "https://artifactory.twitter.biz:443/api/npm/js-virtual/flow-bin/-/flow-bin-0.51.0.tgz#97a3c511a17caa25d8fad58fc17aaabcb86319fe"
+flow-bin@^0.53.0:
+  version "0.53.1"
+  resolved "https://artifactory.twitter.biz:443/api/npm/js-virtual/flow-bin/-/flow-bin-0.53.1.tgz#9b22b63a23c99763ae533ebbab07f88c88c97d84"
 
 for-in@^1.0.1:
   version "1.0.2"
