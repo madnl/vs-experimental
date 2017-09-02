@@ -4,8 +4,9 @@ import React from 'react';
 import VirtualizedScroller from '../VirtualizedScroller';
 import Box from './Box';
 import range from '../util/range';
-import windowViewport from '../viewport/window';
-import type { Item } from '../VirtualizedScroller/interfaces';
+// import windowViewport from '../viewport/window';
+import elementViewport from '../viewport/scrollableElement';
+import type { Item, Viewport } from '../VirtualizedScroller/interfaces';
 
 const ITEM_COUNT = 10;
 const COMPLEXITY = 40;
@@ -23,12 +24,12 @@ const mkItems = (fromIndex: number, count: number) => range(count, i => createIt
 const initialItems = mkItems(0, ITEM_COUNT);
 
 type Props = {};
-type State = { items: Item[] };
+type State = { items: Item[], viewport: ?Viewport };
 
 export default class ColoredList extends React.Component<Props, State> {
   constructor(props: {}, context: Object) {
     super(props, context);
-    this.state = { items: initialItems };
+    this.state = { items: initialItems, viewport: undefined };
   }
 
   componentWillMount() {
@@ -78,10 +79,17 @@ export default class ColoredList extends React.Component<Props, State> {
   }
 
   render() {
+    const { viewport } = this.state;
     return (
-      <div>
-        <VirtualizedScroller viewport={windowViewport()} items={this.state.items} />
+      <div ref={this._setViewport} style={{height: '100vw', overflow: 'scroll'}}>
+        {viewport && <VirtualizedScroller viewport={viewport} items={this.state.items} />}
       </div>
     );
   }
+
+  _setViewport = (elem: ?Element) => {
+    this.setState({
+      viewport: elem && elementViewport(elem)
+    })
+  };
 }

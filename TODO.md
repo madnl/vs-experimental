@@ -17,8 +17,6 @@
 
 # Correctness/Bugs
 
-+ [HIGH] no items are rendered at negative positions
-+ [HIGH] first item is positioned at 0
 + support list changes below viewport top
 + support list changes above viewport top
 + ensure scroll to top works correctly
