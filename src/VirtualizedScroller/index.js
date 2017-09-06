@@ -17,6 +17,8 @@ const NORMALIZE_OFFSET_THRESHOLD = 0.1;
 
 const VIEWPORT_SCROLL_THRESHOLD = 3;
 
+const MAX_ALLOWABLE_EXTRA_COUNT = 1;
+
 type Props = {
   items: Item[],
   shouldUpdate: (prev: Item, next: Item) => boolean,
@@ -123,7 +125,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   render() {
     const { shouldUpdate } = this.props;
     const { renderableItems } = this.state;
-    // console.log('rendering', renderableItems.map(x => x.item.key));
+    console.log('rendering', renderableItems.map(x => x.item.key));
     return (
       <div ref={this._setRunway} style={runwayStyle(this._runwayHeight())}>
         {renderableItems.map(({ item, offset }) => (
@@ -210,12 +212,22 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 
   _updateVisibility(view: Rectangle) {
-    this._visibility.clear();
+    const nextSet = new Set();
+    const prevRendered = new Set();
     this.props.items.forEach(item => {
       if (this._layout.rectangleFor(item.key).doesIntersectWith(view)) {
-        this._visibility.add(item.key);
+        nextSet.add(item.key);
+      } else if (this._visibility.has(item.key)) {
+        prevRendered.add(item.key);
       }
     });
+    // TODO: this might be incorrect
+    const allowedExtraCount = Math.max(0, Math.min(MAX_ALLOWABLE_EXTRA_COUNT, this._visibility.size - nextSet.size));
+    // console.log({allowedExtraCount});
+    const extraItems = [ ...prevRendered ].slice(0, allowedExtraCount);
+    // extraItems.length && console.log({ extraItems });
+    extraItems.forEach(key => nextSet.add(key));
+    this._visibility = nextSet;
   }
 
   _updateLayout(view: Rectangle) {

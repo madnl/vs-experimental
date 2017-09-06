@@ -24,6 +24,7 @@
 
 # Performance improvements
 
++ Recycling
 + Visibility update should split out rendering of new items
 + Defer cleanup to idle moments
   - removing unreferenced data from entries that have dissapeared

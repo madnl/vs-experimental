@@ -8,9 +8,9 @@ import range from '../util/range';
 import elementViewport from '../viewport/scrollableElement';
 import type { Item, Viewport } from '../VirtualizedScroller/interfaces';
 
-const ITEM_COUNT = 10;
-const COMPLEXITY = 40;
-const HEIGHT = '248px';
+const INITIAL_ITEM_COUNT = 100;
+const COMPLEXITY = 3333;
+const HEIGHT = '98px';
 
 const createItem = index => ({
   key: index.toString(),
@@ -21,7 +21,7 @@ const createItem = index => ({
 
 const mkItems = (fromIndex: number, count: number) => range(count, i => createItem(fromIndex + i));
 
-const initialItems = mkItems(0, ITEM_COUNT);
+const initialItems = mkItems(0, INITIAL_ITEM_COUNT);
 
 type Props = {};
 type State = { items: Item[], viewport: ?Viewport };

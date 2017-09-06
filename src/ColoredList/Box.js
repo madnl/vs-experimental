@@ -23,7 +23,7 @@ const tileComplex = {
 };
 
 const tileStyle = backgroundColor => ({
-  minWidth: '10vw',
+  minWidth: '4vw',
   flexGrow: '1',
   backgroundColor
 });
