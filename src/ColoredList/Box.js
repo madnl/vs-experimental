@@ -38,16 +38,38 @@ const textStyle = {
   fontFamily: 'sans-serif'
 };
 
-export default ({ index, complexity, height }: Props) => (
-  <div style={boxStyle(height, borderPalette(index))}>
-    <div style={textStyle}>
-      {index}
-    </div>
-    <div style={tileComplex}>
-      {range(complexity, index => <div key={index} style={tileStyle(tilePalette(index))} />)}
-    </div>
-  </div>
-);
+// export default ({ index, complexity, height }: Props) => (
+//   <div style={boxStyle(height, borderPalette(index))}>
+//     <div style={textStyle}>
+//       {index}
+//     </div>
+//     <div style={tileComplex}>
+//       {range(complexity, index => <div key={index} style={tileStyle(tilePalette(index))} />)}
+//     </div>
+//   </div>
+// );
+
+export default class Box extends React.Component<Props> {
+  componentWillReceiveProps(nextProps: Props) {
+    if (nextProps.index !== this.props.index) {
+      console.log(`Recycled ${this.props.index} -> ${nextProps.index}`);
+    }
+  }
+
+  render() {
+    const { index, complexity, height } = this.props;
+    return (
+      <div style={boxStyle(height, borderPalette(index))}>
+        <div style={textStyle}>
+          {index}
+        </div>
+        <div style={tileComplex}>
+          {range(complexity, index => <div key={index} style={tileStyle(tilePalette(index))} />)}
+        </div>
+      </div>
+    );
+  }
+}
 
 const palette = colorList => index => colorList[index % colorList.length];
 

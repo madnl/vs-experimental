@@ -8,6 +8,7 @@ import Rectangle from './Rectangle';
 import relaxLayout from './relaxLayout';
 import findAnchorIndex from './findAnchorIndex';
 import QuiescenceScheduler from '../util/QuiescenceScheduler';
+import KeyPool from '../util/KeyPool';
 
 const ASSUMED_ITEM_HEIGHT = 200;
 
@@ -27,7 +28,8 @@ type Props = {
 
 type RenderableItem = {
   item: Item,
-  offset: number
+  offset: number,
+  cellKey: string
 };
 
 type State = {
@@ -60,6 +62,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   _cells: Map<string, Element>;
   _unlistenToViewport: ?() => void;
   _quiescenceScheduler: QuiescenceScheduler;
+  _keyPool: KeyPool;
 
   static defaultProps = {
     shouldUpdate: (prev: Item, next: Item) => prev !== next
@@ -76,6 +79,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     this._quiescenceScheduler = new QuiescenceScheduler({
       waitIntervalMs: QUIESCENCE_WAIT_INTERVAL_MS
     });
+    this._keyPool = new KeyPool();
   }
 
   componentWillReceiveProps(nextProps: Props) {
@@ -128,11 +132,11 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     console.log('rendering', renderableItems.map(x => x.item.key));
     return (
       <div ref={this._setRunway} style={runwayStyle(this._runwayHeight())}>
-        {renderableItems.map(({ item, offset }) => (
+        {renderableItems.map(({ cellKey, item, offset }) => (
           <div
             ref={(elem: ?Element) => this._setCell(item.key, elem)}
             style={cellStyle(offset)}
-            key={item.key}
+            key={cellKey}
           >
             <Cell item={item} shouldUpdate={shouldUpdate} />
           </div>
@@ -199,7 +203,10 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
 
   _updateRenderableItems() {
     const { items } = this.props;
-    let nextRenderableItems = buildRenderableItems(items, this._layout, this._visibility);
+    const keyMap = this._keyPool.reAssign(this._visibility);
+    [...this._visibility].some(key => !keyMap.has(key)) &&
+      console.log('BAD KEYMAP', keyMap, this._visibility);
+    let nextRenderableItems = buildRenderableItems(items, this._layout, this._visibility, keyMap);
     this.setState({
       renderableItems: nextRenderableItems
     });
@@ -222,9 +229,12 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
       }
     });
     // TODO: this might be incorrect
-    const allowedExtraCount = Math.max(0, Math.min(MAX_ALLOWABLE_EXTRA_COUNT, this._visibility.size - nextSet.size));
+    const allowedExtraCount = Math.max(
+      0,
+      Math.min(MAX_ALLOWABLE_EXTRA_COUNT, this._visibility.size - nextSet.size)
+    );
     // console.log({allowedExtraCount});
-    const extraItems = [ ...prevRendered ].slice(0, allowedExtraCount);
+    const extraItems = [...prevRendered].slice(0, allowedExtraCount);
     // extraItems.length && console.log({ extraItems });
     extraItems.forEach(key => nextSet.add(key));
     this._visibility = nextSet;
@@ -251,7 +261,8 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     const { items } = this.props;
     const firstItem = items[0];
     if (firstItem) {
-      const badTop = Math.abs(this._layout.rectangleFor(firstItem.key).top) > NORMALIZE_OFFSET_THRESHOLD;
+      const badTop =
+        Math.abs(this._layout.rectangleFor(firstItem.key).top) > NORMALIZE_OFFSET_THRESHOLD;
       const firstItemVisible = this._visibility.has(firstItem.key);
       if (badTop && firstItemVisible) {
         return 'high';
@@ -307,10 +318,14 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 }
 
-const buildRenderableItems = (items, layout, visibleSet) =>
+const buildRenderableItems = (items, layout, visibleSet, cellKeyAssignment) =>
   items
     .filter(item => visibleSet.has(item.key))
-    .map(item => ({ item, offset: layout.rectangleFor(item.key).top }));
+    .map(item => ({
+      cellKey: cellKeyAssignment.get(item.key),
+      item,
+      offset: layout.rectangleFor(item.key).top
+    }));
 
 type Callback = () => void;
 type Requester = (callback: Callback) => number;
