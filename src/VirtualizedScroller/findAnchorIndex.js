@@ -39,6 +39,11 @@ const compareRelationToViewBottom = (view, r1, r2) =>
   preferTrue(r1.doesIntersectWith(view), r2.doesIntersectWith(view)) ||
   preferSmaller(Math.abs(view.bottom - r1.bottom), Math.abs(view.bottom - r2.bottom));
 
+/**
+ * This function scans the list for the one item that should be considered the center
+ * of attention - were the list to change, this item should keep its positoin where it is
+ * in order to minimize the perceived change for the viewer.
+ */
 export default ({ items, visibleSet, view, layout, reversed }: Params): number => {
   const relationToViewCriteria = reversed ? compareRelationToViewBottom : compareRelationToView;
   const compareFit = ({ key: key1 }: Item, { key: key2 }: Item) =>
