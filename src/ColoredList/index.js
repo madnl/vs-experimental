@@ -92,7 +92,7 @@ export default class ColoredList extends React.Component<Props, State> {
             initialAnchor={INITIAL_ANCHOR}
             viewport={viewport}
             items={this.state.items}
-            reverseDirection
+            reversed
           />
         )}
       </div>
