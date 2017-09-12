@@ -7,10 +7,11 @@ import Rectangle from './Rectangle';
 type Params = {
   layout: Layout,
   items: Item[],
-  anchorIndex: number
+  anchorIndex: number,
+  reversed: boolean
 };
 
-export default ({ layout, anchorIndex, items }: Params) => {
+export default ({ layout, anchorIndex, items, reversed }: Params) => {
   const anchorKey = items[anchorIndex].key;
   const anchorRectangle = layout.rectangleFor(anchorKey);
 
@@ -33,6 +34,12 @@ export default ({ layout, anchorIndex, items }: Params) => {
     }
   };
 
-  propagateRelaxation(-1, (prev, adjacent) => adjacent.top - prev.height);
-  propagateRelaxation(+1, (prev, adjacent) => adjacent.bottom);
+  if (reversed) {
+    // TODO: This needs to be different
+    propagateRelaxation(-1, (prev, adjacent) => adjacent.top - prev.height);
+    propagateRelaxation(+1, (prev, adjacent) => adjacent.bottom);
+  } else {
+    propagateRelaxation(-1, (prev, adjacent) => adjacent.top - prev.height);
+    propagateRelaxation(+1, (prev, adjacent) => adjacent.bottom);
+  }
 };

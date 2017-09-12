@@ -10,7 +10,7 @@ type Params = {
   view: Rectangle,
   visibleSet: Set<string>,
   layout: Layout,
-  reverseDirection: boolean
+  reversed: boolean
 };
 
 const preferTrue = (b1, b2) => {
@@ -39,10 +39,8 @@ const compareRelationToViewBottom = (view, r1, r2) =>
   preferTrue(r1.doesIntersectWith(view), r2.doesIntersectWith(view)) ||
   preferSmaller(Math.abs(view.bottom - r1.bottom), Math.abs(view.bottom - r2.bottom));
 
-export default ({ items, visibleSet, view, layout, reverseDirection }: Params): number => {
-  const relationToViewCriteria = reverseDirection
-    ? compareRelationToViewBottom
-    : compareRelationToView;
+export default ({ items, visibleSet, view, layout, reversed }: Params): number => {
+  const relationToViewCriteria = reversed ? compareRelationToViewBottom : compareRelationToView;
   const compareFit = ({ key: key1 }: Item, { key: key2 }: Item) =>
     preferTrue(visibleSet.has(key1), visibleSet.has(key2)) ||
     relationToViewCriteria(view, layout.rectangleFor(key1), layout.rectangleFor(key2));

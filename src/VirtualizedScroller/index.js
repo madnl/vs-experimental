@@ -21,7 +21,7 @@ const VIEWPORT_SCROLL_THRESHOLD = 3;
 const MAX_ALLOWABLE_EXTRA_COUNT = 1;
 
 type Props = {
-  reverseDirection: boolean,
+  reversed: boolean,
   initialAnchor?: Anchor,
   items: Item[],
   shouldUpdate: (prev: Item, next: Item) => boolean,
@@ -76,7 +76,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
 
   static defaultProps = {
     shouldUpdate: (prev: Item, next: Item) => prev !== next,
-    reverseDirection: false
+    reversed: false
   };
 
   constructor(props: Props, context: Object) {
@@ -221,12 +221,12 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   };
 
   _scrollToInitialAnchor() {
-    const { initialAnchor, viewport, reverseDirection } = this.props;
+    const { initialAnchor, viewport, reversed } = this.props;
     if (initialAnchor) {
       const anchor = this._layout.rectangleFor(initialAnchor.key);
       const view = viewport.getRectangle();
-      const currentOffset = reverseDirection ? view.bottom - anchor.bottom : anchor.top - view.top;
-      const adjustment = reverseDirection
+      const currentOffset = reversed ? view.bottom - anchor.bottom : anchor.top - view.top;
+      const adjustment = reversed
         ? initialAnchor.offset - currentOffset
         : currentOffset - initialAnchor.offset;
       console.log('_scrollToInitialAnchor', {
@@ -235,7 +235,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
         currentOffset,
         adjustment,
         initialAnchor,
-        reverseDirection
+        reversed
       });
       if (Math.abs(adjustment) > VIEWPORT_SCROLL_THRESHOLD) {
         viewport.scrollBy(adjustment);
@@ -296,13 +296,13 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 
   _updateLayout(view: Rectangle) {
-    const { items, reverseDirection } = this.props;
+    const { items, reversed } = this.props;
     const anchorIndex = findAnchorIndex({
       items,
       visibleSet: this._visibility,
       view,
       layout: this._layout,
-      reverseDirection
+      reversed
     });
     if (anchorIndex >= 0) {
       relaxLayout({

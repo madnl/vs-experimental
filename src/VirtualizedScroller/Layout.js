@@ -28,6 +28,6 @@ export default class Layout {
   }
 
   translateAll(offset: number) {
-    updateValues(this._rectangles, (r) => r.translateBy(offset));
+    updateValues(this._rectangles, r => r.translateBy(offset));
   }
 }
