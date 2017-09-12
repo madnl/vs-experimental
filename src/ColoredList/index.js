@@ -13,8 +13,8 @@ const COMPLEXITY = 3333;
 const HEIGHT = '98px';
 
 const INITIAL_ANCHOR = {
-  key: '20',
-  offset: 0
+  key: '72',
+  offset: 100
 };
 
 const createItem = index => ({

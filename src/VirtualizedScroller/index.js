@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Cell from './Cell';
-import { Item, Viewport, Anchor } from './interfaces';
+import type { Item, Viewport, Anchor } from './interfaces';
 import Layout from './Layout';
 import Rectangle from './Rectangle';
 import relaxLayout from './relaxLayout';
