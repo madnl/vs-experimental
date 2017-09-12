@@ -12,6 +12,11 @@ const INITIAL_ITEM_COUNT = 100;
 const COMPLEXITY = 3333;
 const HEIGHT = '98px';
 
+const INITIAL_ANCHOR = {
+  key: '20',
+  offset: 0
+};
+
 const createItem = index => ({
   key: index.toString(),
   render() {
@@ -37,7 +42,7 @@ export default class ColoredList extends React.Component<Props, State> {
       this.setState(({ items }: { items: Item[] }) => ({ items: fn(items) }));
     };
     const inserter = (fn: (Item[]) => number, count: number) => {
-      updateItems(items => {
+      updateItems((items) => {
         const index = fn(items);
         if (index < 0) {
           console.error('Index not found');
@@ -47,7 +52,7 @@ export default class ColoredList extends React.Component<Props, State> {
           : items;
       });
     };
-    const adjustedIndex = (key: number, delta = 0) => items => {
+    const adjustedIndex = (key: number, delta = 0) => (items) => {
       const index = items.findIndex(item => item.key === key.toString());
       return index >= 0 ? index + delta : index;
     };
@@ -81,8 +86,14 @@ export default class ColoredList extends React.Component<Props, State> {
   render() {
     const { viewport } = this.state;
     return (
-      <div ref={this._setViewport} style={{height: '100vw', overflow: 'scroll'}}>
-        {viewport && <VirtualizedScroller viewport={viewport} items={this.state.items} />}
+      <div ref={this._setViewport} style={{ height: '100vw', overflow: 'scroll' }}>
+        {viewport && (
+          <VirtualizedScroller
+            initialAnchor={INITIAL_ANCHOR}
+            viewport={viewport}
+            items={this.state.items}
+          />
+        )}
       </div>
     );
   }
@@ -90,6 +101,6 @@ export default class ColoredList extends React.Component<Props, State> {
   _setViewport = (elem: ?Element) => {
     this.setState({
       viewport: elem && elementViewport(elem)
-    })
+    });
   };
 }

@@ -13,3 +13,8 @@ export interface Viewport {
   listen(listener: () => void): () => void,
   scrollBy(offset: number): void
 }
+
+export type Anchor = {
+  key: string,
+  offset: number
+}

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Cell from './Cell';
-import { Item, Viewport } from './interfaces';
+import { Item, Viewport, Anchor } from './interfaces';
 import Layout from './Layout';
 import Rectangle from './Rectangle';
 import relaxLayout from './relaxLayout';
@@ -21,45 +21,47 @@ const VIEWPORT_SCROLL_THRESHOLD = 3;
 const MAX_ALLOWABLE_EXTRA_COUNT = 1;
 
 type Props = {
+  initialAnchor?: Anchor,
   items: Item[],
   shouldUpdate: (prev: Item, next: Item) => boolean,
-  viewport: Viewport,
+  viewport: Viewport
 };
 
 type RenderableItem = {
   item: Item,
   offset: number,
-  cellKey: string,
+  cellKey: string
 };
 
 type State = {
-  renderableItems: RenderableItem[],
+  renderableItems: RenderableItem[]
 };
 
 type UpdateOptions = {
   updateHeights?: boolean,
   updateLayout?: boolean,
   updateVisibility?: boolean,
-  normalizeLayout?: boolean,
+  updateRenderableItems?: boolean,
+  normalizeLayout?: boolean
 };
 
 type NormalizationUrgency = 'none' | 'low' | 'high';
 
 const runwayStyle = (height: number) => ({
   position: 'relative',
-  height: `${height}px`,
+  height: `${height}px`
 });
 
 const cellStyle = (offset: number) => ({
   position: 'absolute',
-  transform: `translateY(${offset}px)`,
+  transform: `translateY(${offset}px)`
 });
 
 const buildRenderableItems = (items, layout, visibleSet, cellKeyAssignment) =>
   items.filter(item => visibleSet.has(item.key)).map(item => ({
     cellKey: cellKeyAssignment.get(item.key) || item.key,
     item,
-    offset: layout.rectangleFor(item.key).top,
+    offset: layout.rectangleFor(item.key).top
   }));
 
 export default class VirtualizedScroller extends React.Component<Props, State> {
@@ -72,26 +74,40 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   _keyPool: KeyPool;
 
   static defaultProps = {
-    shouldUpdate: (prev: Item, next: Item) => prev !== next,
+    shouldUpdate: (prev: Item, next: Item) => prev !== next
   };
 
   constructor(props: Props, context: Object) {
     super(props, context);
     this._visibility = new Set();
     this._layout = new Layout(ASSUMED_ITEM_HEIGHT);
+
     this._cells = new Map();
     this.state = {
-      renderableItems: [],
+      renderableItems: []
     };
     this._quiescenceScheduler = new QuiescenceScheduler({
-      waitIntervalMs: QUIESCENCE_WAIT_INTERVAL_MS,
+      waitIntervalMs: QUIESCENCE_WAIT_INTERVAL_MS
     });
     this._keyPool = new KeyPool();
+  }
+
+  componentWillMount() {
+    const { items, initialAnchor } = this.props;
+    if (items.length > 0) {
+      relaxLayout({ layout: this._layout, anchorIndex: 0, items });
+    }
+    if (initialAnchor) {
+      console.log('initialAnchor', initialAnchor);
+      this._visibility.add(initialAnchor.key);
+      this._update({ updateRenderableItems: true });
+    }
   }
 
   componentDidMount() {
     this._unlistenToViewport = this.props.viewport.listen(this._handleScroll);
     this._scheduleUpdate({ updateHeights: true, updateVisibility: true });
+    this._scrollToInitialAnchor();
   }
 
   componentWillReceiveProps(nextProps: Props) {
@@ -152,20 +168,23 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     );
   }
 
-  _update = ({ updateHeights, updateLayout, updateVisibility, normalizeLayout }: UpdateOptions) => {
+  _update = ({
+    updateHeights,
+    updateLayout,
+    updateVisibility,
+    normalizeLayout,
+    updateRenderableItems
+  }: UpdateOptions) => {
     this._quiescenceScheduler.signalWork();
     const view = this._getRelativeView();
-    if (!view) {
-      return;
-    }
     if (updateHeights) {
       this._recordHeights();
     }
     const shouldUpdateLayout = updateLayout || updateHeights;
-    if (shouldUpdateLayout) {
+    if (shouldUpdateLayout && view) {
       this._updateLayout(view);
     }
-    if (updateVisibility) {
+    if (updateVisibility && view) {
       this._updateVisibility(view);
     }
     const normalizationUrgency = this._normalizationUrgency();
@@ -177,7 +196,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     } else if (normalizationUrgency === 'low') {
       this._scheduleUpdateWhenIdle({ normalizeLayout: true });
     }
-    if (shouldUpdateLayout || updateVisibility || shouldNormalize) {
+    if (shouldUpdateLayout || updateVisibility || shouldNormalize || updateRenderableItems) {
       this._updateRenderableItems();
     }
     if (scrollOffset) {
@@ -199,11 +218,24 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     // );
   };
 
+  _scrollToInitialAnchor() {
+    const { initialAnchor, viewport } = this.props;
+    if (initialAnchor) {
+      const anchor = this._layout.rectangleFor(initialAnchor.key);
+      const view = viewport.getRectangle();
+      const currentOffset = anchor.top - view.top;
+      const adjustment = currentOffset - initialAnchor.offset;
+      if (Math.abs(adjustment) > VIEWPORT_SCROLL_THRESHOLD) {
+        viewport.scrollBy(adjustment);
+      }
+    }
+  }
+
   _scheduleUpdate = createScheduler(window.requestAnimationFrame, this._update);
 
   _scheduleUpdateWhenIdle = createScheduler(
     cb => this._quiescenceScheduler.schedule(cb),
-    this._update,
+    this._update
   );
 
   _handleScroll = () => {
@@ -219,7 +251,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     }
     const nextRenderableItems = buildRenderableItems(items, this._layout, this._visibility, keyMap);
     this.setState({
-      renderableItems: nextRenderableItems,
+      renderableItems: nextRenderableItems
     });
   }
 
@@ -242,7 +274,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     // TODO: this might be incorrect
     const allowedExtraCount = Math.max(
       0,
-      Math.min(MAX_ALLOWABLE_EXTRA_COUNT, this._visibility.size - nextSet.size),
+      Math.min(MAX_ALLOWABLE_EXTRA_COUNT, this._visibility.size - nextSet.size)
     );
     // console.log({allowedExtraCount});
     const extraItems = [...prevRendered].slice(0, allowedExtraCount);
@@ -257,13 +289,13 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
       items,
       visibleSet: this._visibility,
       view,
-      layout: this._layout,
+      layout: this._layout
     });
     if (anchorIndex >= 0) {
       relaxLayout({
         layout: this._layout,
         anchorIndex,
-        items,
+        items
       });
     }
   }
@@ -279,7 +311,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
         return 'high';
       }
       const visibleWithNegativeOffsets = [...this._visibility].some(
-        key => this._layout.rectangleFor(key).top < -NORMALIZE_OFFSET_THRESHOLD,
+        key => this._layout.rectangleFor(key).top < -NORMALIZE_OFFSET_THRESHOLD
       );
       if (visibleWithNegativeOffsets) {
         return 'high';
