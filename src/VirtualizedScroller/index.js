@@ -95,9 +95,9 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 
   componentWillMount() {
-    const { items, initialAnchor } = this.props;
+    const { items, initialAnchor, reversed } = this.props;
     if (items.length > 0) {
-      relaxLayout({ layout: this._layout, anchorIndex: 0, items });
+      relaxLayout({ layout: this._layout, anchorIndex: 0, items, reversed });
     }
     if (initialAnchor) {
       console.log('initialAnchor', initialAnchor);

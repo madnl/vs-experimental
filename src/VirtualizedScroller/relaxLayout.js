@@ -11,6 +11,12 @@ type Params = {
   reversed: boolean
 };
 
+const alignTopWithAdjacentBottom = (prev, adjacent) => adjacent.bottom;
+const alignBottomWithAdjacentTop = (prev, adjacent) => adjacent.top - prev.height;
+
+const STEP_TOWARDS_FIRST_ITEM = -1;
+const STEP_TOWARDS_LAST_ITEM = 1;
+
 export default ({ layout, anchorIndex, items, reversed }: Params) => {
   const anchorKey = items[anchorIndex].key;
   const anchorRectangle = layout.rectangleFor(anchorKey);
@@ -35,11 +41,10 @@ export default ({ layout, anchorIndex, items, reversed }: Params) => {
   };
 
   if (reversed) {
-    // TODO: This needs to be different
-    propagateRelaxation(-1, (prev, adjacent) => adjacent.top - prev.height);
-    propagateRelaxation(+1, (prev, adjacent) => adjacent.bottom);
+    propagateRelaxation(STEP_TOWARDS_FIRST_ITEM, alignTopWithAdjacentBottom);
+    propagateRelaxation(STEP_TOWARDS_LAST_ITEM, alignBottomWithAdjacentTop);
   } else {
-    propagateRelaxation(-1, (prev, adjacent) => adjacent.top - prev.height);
-    propagateRelaxation(+1, (prev, adjacent) => adjacent.bottom);
+    propagateRelaxation(STEP_TOWARDS_FIRST_ITEM, alignBottomWithAdjacentTop);
+    propagateRelaxation(STEP_TOWARDS_LAST_ITEM, alignTopWithAdjacentBottom);
   }
 };
