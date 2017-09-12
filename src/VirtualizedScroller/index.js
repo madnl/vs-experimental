@@ -21,6 +21,7 @@ const VIEWPORT_SCROLL_THRESHOLD = 3;
 const MAX_ALLOWABLE_EXTRA_COUNT = 1;
 
 type Props = {
+  reverseDirection: boolean,
   initialAnchor?: Anchor,
   items: Item[],
   shouldUpdate: (prev: Item, next: Item) => boolean,
@@ -74,7 +75,8 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   _keyPool: KeyPool;
 
   static defaultProps = {
-    shouldUpdate: (prev: Item, next: Item) => prev !== next
+    shouldUpdate: (prev: Item, next: Item) => prev !== next,
+    reverseDirection: false
   };
 
   constructor(props: Props, context: Object) {
@@ -219,12 +221,22 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   };
 
   _scrollToInitialAnchor() {
-    const { initialAnchor, viewport } = this.props;
+    const { initialAnchor, viewport, reverseDirection } = this.props;
     if (initialAnchor) {
       const anchor = this._layout.rectangleFor(initialAnchor.key);
       const view = viewport.getRectangle();
-      const currentOffset = anchor.top - view.top;
-      const adjustment = currentOffset - initialAnchor.offset;
+      const currentOffset = reverseDirection ? view.bottom - anchor.bottom : anchor.top - view.top;
+      const adjustment = reverseDirection
+        ? initialAnchor.offset - currentOffset
+        : currentOffset - initialAnchor.offset;
+      console.log('_scrollToInitialAnchor', {
+        view,
+        anchor,
+        currentOffset,
+        adjustment,
+        initialAnchor,
+        reverseDirection
+      });
       if (Math.abs(adjustment) > VIEWPORT_SCROLL_THRESHOLD) {
         viewport.scrollBy(adjustment);
       }
@@ -284,12 +296,13 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 
   _updateLayout(view: Rectangle) {
-    const { items } = this.props;
+    const { items, reverseDirection } = this.props;
     const anchorIndex = findAnchorIndex({
       items,
       visibleSet: this._visibility,
       view,
-      layout: this._layout
+      layout: this._layout,
+      reverseDirection
     });
     if (anchorIndex >= 0) {
       relaxLayout({

@@ -13,8 +13,8 @@ const COMPLEXITY = 3333;
 const HEIGHT = '98px';
 
 const INITIAL_ANCHOR = {
-  key: '72',
-  offset: 100
+  key: '99',
+  offset: 0
 };
 
 const createItem = index => ({
@@ -92,6 +92,7 @@ export default class ColoredList extends React.Component<Props, State> {
             initialAnchor={INITIAL_ANCHOR}
             viewport={viewport}
             items={this.state.items}
+            reverseDirection
           />
         )}
       </div>
