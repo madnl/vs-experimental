@@ -155,7 +155,6 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     const { shouldUpdate } = this.props;
     const { renderableItems } = this.state;
     console.log('rendering', renderableItems.map(x => x.item.key));
-    console.log('rendering/height', this._runwayHeight());
     return (
       <div ref={this._setRunway} style={runwayStyle(this._runwayHeight())}>
         {renderableItems.map(({ cellKey, item, offset }) => (
@@ -203,9 +202,12 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
       this._updateRenderableItems();
     }
     if (scrollOffset) {
-      console.log('Forced scroll offset', scrollOffset);
+      console.log('Forced scroll offset', scrollOffset, { normalizeLayout, normalizationUrgency });
     }
-    if (Math.abs(scrollOffset) > VIEWPORT_SCROLL_THRESHOLD) {
+    // if (Math.abs(scrollOffset) > VIEWPORT_SCROLL_THRESHOLD) {
+    //   this.props.viewport.scrollBy(-scrollOffset);
+    // }
+    if (Math.abs(scrollOffset) > 0.1) {
       this.props.viewport.scrollBy(-scrollOffset);
     }
 
@@ -305,6 +307,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
       layout: this._layout,
       reversed
     });
+    console.log('Anchor', { anchorIndex, anchor: items[anchorIndex] && items[anchorIndex].key });
     if (anchorIndex >= 0) {
       relaxLayout({
         layout: this._layout,
@@ -316,7 +319,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 
   _normalizationUrgency(): NormalizationUrgency {
-    const topmostItem = this._topMostItem();
+    const topmostItem = this._topmostItem();
     if (topmostItem) {
       const badTop =
         Math.abs(this._layout.rectangleFor(topmostItem.key).top) > NORMALIZE_OFFSET_THRESHOLD;
@@ -338,8 +341,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 
   _normalizeLayout() {
-    const topmostItem = this._topMostItem();
-    console.log('_normalizeLayout', { topmostItem });
+    const topmostItem = this._topmostItem();
     const layout = this._layout;
     if (topmostItem) {
       const offset = layout.rectangleFor(topmostItem.key).top;
@@ -357,16 +359,16 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 
   _runwayHeight() {
-    const bottomItem = this._bottomMostItem();
+    const bottomItem = this._bottommostItem();
     return bottomItem ? this._layout.rectangleFor(bottomItem.key).bottom : 0;
   }
 
-  _topMostItem() {
+  _topmostItem() {
     const { reversed, items } = this.props;
     return items.length > 0 ? (reversed ? items[items.length - 1] : items[0]) : undefined;
   }
 
-  _bottomMostItem() {
+  _bottommostItem() {
     const { reversed, items } = this.props;
     return items.length > 0 ? (reversed ? items[0] : items[items.length - 1]) : undefined;
   }
