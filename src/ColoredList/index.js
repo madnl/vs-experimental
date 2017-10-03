@@ -12,10 +12,12 @@ const INITIAL_ITEM_COUNT = 100;
 const COMPLEXITY = 3333;
 const HEIGHT = '98px';
 
-const INITIAL_ANCHOR = {
-  key: '99',
-  offset: 0
-};
+// const INITIAL_ANCHOR = {
+//   key: '99',
+//   offset: 0
+// };
+
+const INITIAL_ANCHOR = undefined;
 
 const createItem = index => ({
   key: index.toString(),
@@ -86,7 +88,7 @@ export default class ColoredList extends React.Component<Props, State> {
   render() {
     const { viewport } = this.state;
     return (
-      <div ref={this._setViewport} style={{ height: '100vw', overflow: 'scroll' }}>
+      <div ref={this._setViewport} style={{ height: '70vw', overflow: 'scroll' }}>
         {viewport && (
           <VirtualizedScroller
             initialAnchor={INITIAL_ANCHOR}

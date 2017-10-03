@@ -12,6 +12,7 @@
     "react/jsx-filename-extension": "off",
     "react/sort-comp": "off",
     "comma-dangle": ["off", "never"],
-    "no-console": "off"
+    "no-console": "off",
+    "no-nested-ternary": "off"
   }
 }

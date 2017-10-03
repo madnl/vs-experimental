@@ -155,6 +155,7 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     const { shouldUpdate } = this.props;
     const { renderableItems } = this.state;
     console.log('rendering', renderableItems.map(x => x.item.key));
+    console.log('rendering/height', this._runwayHeight());
     return (
       <div ref={this._setRunway} style={runwayStyle(this._runwayHeight())}>
         {renderableItems.map(({ cellKey, item, offset }) => (
@@ -308,18 +309,18 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
       relaxLayout({
         layout: this._layout,
         anchorIndex,
-        items
+        items,
+        reversed
       });
     }
   }
 
   _normalizationUrgency(): NormalizationUrgency {
-    const { items } = this.props;
-    const firstItem = items[0];
-    if (firstItem) {
+    const topmostItem = this._topMostItem();
+    if (topmostItem) {
       const badTop =
-        Math.abs(this._layout.rectangleFor(firstItem.key).top) > NORMALIZE_OFFSET_THRESHOLD;
-      const firstItemVisible = this._visibility.has(firstItem.key);
+        Math.abs(this._layout.rectangleFor(topmostItem.key).top) > NORMALIZE_OFFSET_THRESHOLD;
+      const firstItemVisible = this._visibility.has(topmostItem.key);
       if (badTop && firstItemVisible) {
         return 'high';
       }
@@ -337,11 +338,11 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 
   _normalizeLayout() {
-    const { items } = this.props;
-    const firstItem = items[0];
+    const topmostItem = this._topMostItem();
+    console.log('_normalizeLayout', { topmostItem });
     const layout = this._layout;
-    if (firstItem) {
-      const offset = layout.rectangleFor(firstItem.key).top;
+    if (topmostItem) {
+      const offset = layout.rectangleFor(topmostItem.key).top;
       if (offset !== 0) {
         layout.translateAll(-offset);
         return offset;
@@ -356,9 +357,18 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   }
 
   _runwayHeight() {
-    const { items } = this.props;
-    const lastItem = items.length > 0 ? items[items.length - 1] : undefined;
-    return lastItem ? this._layout.rectangleFor(lastItem.key).bottom : 0;
+    const bottomItem = this._bottomMostItem();
+    return bottomItem ? this._layout.rectangleFor(bottomItem.key).bottom : 0;
+  }
+
+  _topMostItem() {
+    const { reversed, items } = this.props;
+    return items.length > 0 ? (reversed ? items[items.length - 1] : items[0]) : undefined;
+  }
+
+  _bottomMostItem() {
+    const { reversed, items } = this.props;
+    return items.length > 0 ? (reversed ? items[0] : items[items.length - 1]) : undefined;
   }
 
   _setRunway = (elem: ?Element) => {
