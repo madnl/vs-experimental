@@ -12,7 +12,8 @@ type Params = {
 };
 
 const alignTopWithAdjacentBottom = (prev, adjacent) => adjacent.bottom;
-const alignBottomWithAdjacentTop = (prev, adjacent) => adjacent.top - prev.height;
+const alignBottomWithAdjacentTop = (prev, adjacent) =>
+  adjacent.top - prev.height;
 
 const STEP_TOWARDS_FIRST_ITEM = -1;
 const STEP_TOWARDS_LAST_ITEM = 1;
@@ -23,7 +24,7 @@ const STEP_TOWARDS_LAST_ITEM = 1;
  * overlaps between consecutive items. You can think of the list of items
  * as a spring - this function makes sure the spring is neither compressed
  * nor extended.
- * 
+ *
  * In order to perform relaxation we need a reference item, denoted by the
  * anchorIndex, around which we set the positions for the other items. The
  * anchor item will have the same position at the end of the procedure, while

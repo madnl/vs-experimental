@@ -9,10 +9,10 @@ type Props = {
 };
 
 export default class Cell extends React.Component<Props> {
-
   shouldComponentUpdate(nextProps: Props) {
     const { item } = this.props;
-    return nextProps.shouldUpdate(item, nextProps.item);
+    const { shouldUpdate, item: nextItem } = nextProps;
+    return shouldUpdate(item, nextItem);
   }
 
   render() {

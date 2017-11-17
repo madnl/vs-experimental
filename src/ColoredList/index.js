@@ -26,7 +26,8 @@ const createItem = index => ({
   }
 });
 
-const mkItems = (fromIndex: number, count: number) => range(count, i => createItem(fromIndex + i));
+const mkItems = (fromIndex: number, count: number) =>
+  range(count, i => createItem(fromIndex + i));
 
 const initialItems = mkItems(0, INITIAL_ITEM_COUNT);
 
@@ -44,17 +45,21 @@ export default class ColoredList extends React.Component<Props, State> {
       this.setState(({ items }: { items: Item[] }) => ({ items: fn(items) }));
     };
     const inserter = (fn: (Item[]) => number, count: number) => {
-      updateItems((items) => {
+      updateItems(items => {
         const index = fn(items);
         if (index < 0) {
           console.error('Index not found');
         }
         return index >= 0
-          ? [...items.slice(0, index), ...mkItems(items.length, count), ...items.slice(index)]
+          ? [
+              ...items.slice(0, index),
+              ...mkItems(items.length, count),
+              ...items.slice(index)
+            ]
           : items;
       });
     };
-    const adjustedIndex = (key: number, delta = 0) => (items) => {
+    const adjustedIndex = (key: number, delta = 0) => items => {
       const index = items.findIndex(item => item.key === key.toString());
       return index >= 0 ? index + delta : index;
     };
@@ -88,7 +93,10 @@ export default class ColoredList extends React.Component<Props, State> {
   render() {
     const { viewport } = this.state;
     return (
-      <div ref={this._setViewport} style={{ height: '70vw', overflow: 'scroll' }}>
+      <div
+        ref={this._setViewport}
+        style={{ height: '70vw', overflow: 'scroll' }}
+      >
         {viewport && (
           <VirtualizedScroller
             initialAnchor={INITIAL_ANCHOR}

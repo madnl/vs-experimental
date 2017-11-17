@@ -3,7 +3,7 @@
 import React from 'react';
 import ColoredList from './ColoredList';
 
-type Props = {}
+type Props = {};
 
 class App extends React.Component<Props> {
   render() {

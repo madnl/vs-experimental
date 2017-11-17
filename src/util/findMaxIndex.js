@@ -1,6 +1,9 @@
 // @flow
 
-export default function argMax<T>(items: T[], comparator: (T, T) => number): number {
+export default function argMax<T>(
+  items: T[],
+  comparator: (T, T) => number
+): number {
   if (items.length === 0) {
     return -1;
   }
