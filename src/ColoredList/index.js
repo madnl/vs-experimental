@@ -8,7 +8,7 @@ import range from '../util/range';
 import elementViewport from '../viewport/scrollableElement';
 import type { Item, Viewport } from '../VirtualizedScroller/interfaces';
 
-const INITIAL_ITEM_COUNT = 100;
+const INITIAL_ITEM_COUNT = 5;
 const COMPLEXITY = 3334;
 const HEIGHT = '98px';
 
