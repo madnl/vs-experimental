@@ -1,6 +1,6 @@
 // @flow
 
-export default function argMax<T>(
+export default function findMaxIndex<T>(
   items: T[],
   comparator: (T, T) => number
 ): number {

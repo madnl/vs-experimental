@@ -75,7 +75,7 @@ export default class Box extends React.Component<Props> {
         <div style={textStyle}>{index}</div>
         <div style={tileComplex}>
           {range(complexity, i => (
-            <div key={i} style={tileStyle(tilePalette(index))} />
+            <div key={i} style={tileStyle(tilePalette(i))} />
           ))}
         </div>
       </div>

@@ -8,7 +8,6 @@ import Rectangle from './Rectangle';
 import relaxLayout from './relaxLayout';
 import findAnchorIndex from './findAnchorIndex';
 import QuiescenceScheduler from '../util/QuiescenceScheduler';
-import KeyPool from '../util/KeyPool';
 
 const ASSUMED_ITEM_HEIGHT = 200;
 
@@ -30,8 +29,7 @@ type Props = {
 
 type RenderableItem = {
   item: Item,
-  offset: number,
-  cellKey: string
+  offset: number
 };
 
 type State = {
@@ -58,9 +56,8 @@ const cellStyle = (offset: number) => ({
   transform: `translateY(${offset}px)`
 });
 
-const buildRenderableItems = (items, layout, visibleSet, cellKeyAssignment) =>
+const buildRenderableItems = (items, layout, visibleSet) =>
   items.filter(item => visibleSet.has(item.key)).map(item => ({
-    cellKey: cellKeyAssignment.get(item.key) || item.key,
     item,
     offset: layout.rectangleFor(item.key).top
   }));
@@ -72,7 +69,6 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
   _cells: Map<string, Element>;
   _unlistenToViewport: ?() => void;
   _quiescenceScheduler: QuiescenceScheduler;
-  _keyPool: KeyPool;
 
   static defaultProps = {
     shouldUpdate: (prev: Item, next: Item) => prev !== next,
@@ -91,7 +87,6 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     this._quiescenceScheduler = new QuiescenceScheduler({
       waitIntervalMs: QUIESCENCE_WAIT_INTERVAL_MS
     });
-    this._keyPool = new KeyPool();
   }
 
   componentWillMount() {
@@ -157,11 +152,11 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
     console.log('rendering', renderableItems.map(x => x.item.key));
     return (
       <div ref={this._setRunway} style={runwayStyle(this._runwayHeight())}>
-        {renderableItems.map(({ cellKey, item, offset }) => (
+        {renderableItems.map(({ item, offset }) => (
           <div
             ref={(elem: ?Element) => this._setCell(item.key, elem)}
             style={cellStyle(offset)}
-            key={cellKey}
+            key={item.key}
           >
             <Cell item={item} shouldUpdate={shouldUpdate} />
           </div>
@@ -271,15 +266,10 @@ export default class VirtualizedScroller extends React.Component<Props, State> {
 
   _updateRenderableItems() {
     const { items } = this.props;
-    const keyMap = this._keyPool.reAssign(this._visibility);
-    if ([...this._visibility].some(key => !keyMap.has(key))) {
-      console.log('BAD KEYMAP', keyMap, this._visibility);
-    }
     const nextRenderableItems = buildRenderableItems(
       items,
       this._layout,
-      this._visibility,
-      keyMap
+      this._visibility
     );
     this.setState({
       renderableItems: nextRenderableItems
